@@ -43,7 +43,7 @@ const INITIAL_POINTS: Point2D[] = [
 const INITIAL_LINES: LineSegment[] = [];
 
 const SIDEBAR_WIDTH = 256; 
-const HEADER_HEIGHT = 80; // Height of the branding header
+const HEADER_HEIGHT = 140; // Increased height for bold centered layout
 
 const App: React.FC = () => {
   const [tool, setTool] = useState<ToolType>(ToolType.SELECT);
@@ -1358,16 +1358,26 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-slate-50">
       {/* BRANDING HEADER */}
-      <div className="h-[80px] bg-gradient-to-r from-blue-900 to-blue-800 text-white flex items-center px-6 shadow-md z-40 relative shrink-0 border-b-4 border-orange-500">
-        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mr-4 border-2 border-orange-500 shadow-sm text-3xl shrink-0">
-            <span role="img" aria-label="logo">📚</span> 
+      <div className="h-[140px] bg-blue-900 flex items-center justify-center relative px-4 shadow-md z-40 shrink-0 border-b-4 border-orange-500">
+        {/* Logo Left */}
+        <div className="absolute left-6 top-1/2 transform -translate-y-1/2 w-28 h-28 bg-white rounded-full p-1 border-2 border-white shadow-lg flex items-center justify-center overflow-hidden">
+             <img
+                src="https://drive.google.com/uc?export=view&id=1FNKbFgs2_2WOkb7hItnGW-uldrRQEFxM"
+                alt="An Phuc Logo"
+                className="object-contain w-full h-full"
+             />
         </div>
-        <div className="flex flex-col">
-            <h1 className="font-bold text-2xl uppercase tracking-wider text-white drop-shadow-md">
-                TRUNG TÂM AN PHÚC
+
+        {/* Centered Text Content */}
+        <div className="flex flex-col items-center justify-center text-white space-y-1 w-full pl-32">
+            <h1 className="font-bold text-3xl uppercase tracking-wider drop-shadow-md text-center">
+                TRUNG TÂM TOÁN AN PHÚC EDUCATION
             </h1>
-            <p className="text-sm text-orange-200 font-medium italic tracking-wide mt-1">
-                "Vững kiến thức - Chắc tương lai"
+            <p className="font-bold text-xl uppercase tracking-wide drop-shadow-md text-center text-orange-400">
+                "VỮNG KIẾN THỨC - CHẮC TƯƠNG LAI"
+            </p>
+            <p className="font-bold text-xs uppercase tracking-wide mt-2 opacity-90 text-center leading-tight max-w-4xl">
+                ĐỊA CHỈ: LÔ 19, Ô DC 16, KHU TÁI ĐỊNH CƯ VĨNH TRƯỜNG, NAM NHA TRANG, KHÁNH HÒA - SĐT: 0986.108.104 - 0834.23.02.87
             </p>
         </div>
       </div>
