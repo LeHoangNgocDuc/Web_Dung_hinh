@@ -1362,10 +1362,10 @@ const App: React.FC = () => {
         {/* Logo Left */}
         <div className="absolute left-6 top-1/2 transform -translate-y-1/2 w-28 h-28 bg-white rounded-full p-1 border-2 border-white shadow-lg flex items-center justify-center overflow-hidden">
              <img
-                src="https://drive.google.com/uc?export=view&id=1FNKbFgs2_2WOkb7hItnGW-uldrRQEFxM"
-                alt="An Phuc Logo"
-                className="object-contain w-full h-full"
-             />
+   src={logoImg} 
+   alt="LogoAP"
+   className="object-contain w-full h-full" 
+/>
         </div>
 
         {/* Centered Text Content */}
