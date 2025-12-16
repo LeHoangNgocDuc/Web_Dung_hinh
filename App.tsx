@@ -1,4 +1,4 @@
-
+import logoImg from './LogoAP.jpg';
 import React, { useState, useRef, useEffect } from 'react';
 import { Layer, Circle as KonvaCircle, Line as KonvaLine, Text as KonvaText, Arc as KonvaArc } from 'react-konva';
 // Toolbar removed
