@@ -43,13 +43,19 @@ const INITIAL_POINTS: Point2D[] = [
 const INITIAL_LINES: LineSegment[] = [];
 
 const SIDEBAR_WIDTH = 256; 
-const HEADER_HEIGHT = 140; // Increased height for bold centered layout
+// Header height varies by screen size now, handled dynamically in layout, 
+// but we define a desktop constant for initial calc.
+const DESKTOP_HEADER_HEIGHT = 140; 
 
 const App: React.FC = () => {
   const [tool, setTool] = useState<ToolType>(ToolType.SELECT);
   const [step, setStep] = useState<ToolStep>(ToolStep.IDLE);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   
+  // Responsive State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024); // Default open on Desktop (lg)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+
   const [points, setPoints] = useState<Point2D[]>(INITIAL_POINTS);
   const [lines, setLines] = useState<LineSegment[]>(INITIAL_LINES);
   const [decorations, setDecorations] = useState<Decoration[]>([]);
@@ -71,9 +77,10 @@ const App: React.FC = () => {
   const [stageScale, setStageScale] = useState<number>(1);
   
   // Window Dimensions State
+  const headerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ 
-    width: window.innerWidth - SIDEBAR_WIDTH, 
-    height: window.innerHeight - HEADER_HEIGHT
+    width: window.innerWidth, 
+    height: window.innerHeight - DESKTOP_HEADER_HEIGHT
   });
 
   // Modal State for Inputs
@@ -120,18 +127,32 @@ const App: React.FC = () => {
                             isRayAnim || isLineAnim || isMeasureAnim || isDrawAngleAnim || 
                             (isRightTri && step === ToolStep.ANIMATING) || isPerpEke || isParaSlide || isTangent;
 
-  // Handle Resize accounting for Sidebar
-  useEffect(() => {
-    const handleResize = () => {
-      setDimensions({ 
-        width: window.innerWidth - SIDEBAR_WIDTH, 
-        height: window.innerHeight - HEADER_HEIGHT
-      });
-    };
+  // Handle Resize accounting for Sidebar and Header Height
+  const updateDimensions = () => {
+    const isNowMobile = window.innerWidth < 1024;
+    setIsMobile(isNowMobile);
+    
+    // If we switched from desktop to mobile, auto-close sidebar
+    if (isNowMobile && !isMobile) setIsSidebarOpen(false);
+    // If we switched from mobile to desktop, auto-open sidebar
+    if (!isNowMobile && isMobile) setIsSidebarOpen(true);
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    const hHeight = headerRef.current ? headerRef.current.offsetHeight : DESKTOP_HEADER_HEIGHT;
+    
+    // On Desktop: Width = Window - Sidebar (if open). On Mobile: Width = Window (Sidebar overlays)
+    const effectiveSidebarWidth = (!isNowMobile && isSidebarOpen) ? SIDEBAR_WIDTH : 0;
+    
+    setDimensions({ 
+      width: window.innerWidth - effectiveSidebarWidth, 
+      height: window.innerHeight - hHeight
+    });
+  };
+
+  useEffect(() => {
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [isSidebarOpen, isMobile]);
 
   // Use the custom hook for snapping logic
   const shouldSnap = !isGlobalAnimating && 
@@ -268,8 +289,8 @@ const App: React.FC = () => {
       setSecondPoint(null);
       setTempPoints([]);
       setShowInputModal(false);
-      // Deselect lesson if a manual tool is picked
-      // setActiveLesson(null); // Optional: depends on UX preference
+      // Close sidebar on mobile when a tool is picked
+      if (isMobile) setIsSidebarOpen(false);
   };
 
   const handleColorChange = (color: string) => {
@@ -316,6 +337,8 @@ const App: React.FC = () => {
     };
 
     setTool(toolMap[lesson.toolId] || ToolType.SELECT);
+    // Close sidebar on mobile
+    if (isMobile) setIsSidebarOpen(false);
   };
 
   const handleStageClick = () => {
@@ -1357,43 +1380,78 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-slate-50">
-      {/* BRANDING HEADER */}
-      <div className="h-[140px] bg-blue-900 flex items-center justify-center relative px-4 shadow-md z-40 shrink-0 border-b-4 border-orange-500">
-        {/* Logo Left */}
-        <div className="absolute left-6 top-1/2 transform -translate-y-1/2 w-28 h-28 bg-white rounded-full p-1 border-2 border-white shadow-lg flex items-center justify-center overflow-hidden">
-             <img
-   src={logoImg} 
+      {/* BRANDING HEADER - RESPONSIVE */}
+      <div 
+        ref={headerRef}
+        className="w-full bg-blue-900 shadow-md z-40 shrink-0 border-b-4 border-orange-500 min-h-[80px] md:h-[140px] px-4 flex items-center"
+      >
+        {/* Mobile Layout: Hamburger Left, Logo & Text Flex */}
+        <div className="flex items-center w-full justify-between lg:justify-center relative h-full py-2">
+            
+            {/* Mobile Menu Button */}
+            <button 
+                className="lg:hidden text-white text-3xl mr-4"
+                onClick={() => setIsSidebarOpen(true)}
+            >
+                ☰
+            </button>
+
+            {/* Logo Container - Absolute Desktop, Relative Mobile */}
+            <div className={`
+                flex items-center justify-center bg-white rounded-full border-2 border-white shadow-lg overflow-hidden shrink-0
+                w-16 h-16 md:w-20 md:h-20 lg:w-28 lg:h-28 lg:absolute lg:left-6 lg:top-1/2 lg:transform lg:-translate-y-1/2
+            `}>
+                 <img
+                     src={logoImg} 
    alt="LogoAP"
    className="object-contain w-full h-full" 
-/>
-        </div>
+                 />
+            </div>
 
-        {/* Centered Text Content */}
-        <div className="flex flex-col items-center justify-center text-white space-y-1 w-full pl-32">
-            <h1 className="font-bold text-3xl uppercase tracking-wider drop-shadow-md text-center">
-                TRUNG TÂM TOÁN AN PHÚC EDUCATION
-            </h1>
-            <p className="font-bold text-xl uppercase tracking-wide drop-shadow-md text-center text-orange-400">
-                "VỮNG KIẾN THỨC - CHẮC TƯƠNG LAI"
-            </p>
-            <p className="font-bold text-xs uppercase tracking-wide mt-2 opacity-90 text-center leading-tight max-w-4xl">
-                ĐỊA CHỈ: LÔ 19, Ô DC 16, KHU TÁI ĐỊNH CƯ VĨNH TRƯỜNG, NAM NHA TRANG, KHÁNH HÒA - SĐT: 0986.108.104 - 0834.23.02.87
-            </p>
+            {/* Text Content - Center Desktop, Flex Right Mobile */}
+            <div className="flex flex-col items-start lg:items-center justify-center text-white space-y-1 w-full lg:pl-32 ml-4 lg:ml-0">
+                <h1 className="font-bold text-sm md:text-xl lg:text-3xl uppercase tracking-wider drop-shadow-md text-left lg:text-center leading-tight">
+                    TRUNG TÂM TOÁN AN PHÚC EDUCATION
+                </h1>
+                <p className="font-bold text-xs md:text-base lg:text-xl uppercase tracking-wide drop-shadow-md text-orange-400 text-left lg:text-center hidden sm:block">
+                    "VỮNG KIẾN THỨC - CHẮC TƯƠNG LAI"
+                </p>
+                <p className="font-bold text-[10px] lg:text-xs uppercase tracking-wide mt-1 opacity-90 text-left lg:text-center leading-tight max-w-4xl hidden md:block">
+                    ĐỊA CHỈ: LÔ 19, Ô DC 16, KHU TÁI ĐỊNH CƯ VĨNH TRƯỜNG, NAM NHA TRANG, KHÁNH HÒA - SĐT: 0986.108.104 - 0834.23.02.87
+                </p>
+            </div>
         </div>
       </div>
 
       <div className="flex flex-1 w-full overflow-hidden relative">
-        <LessonSidebar 
-            activeLessonId={activeLesson?.id || null} 
-            onSelectLesson={handleLessonSelect} 
-            currentTool={tool}
-            setTool={handleToolChange}
-        />
+        
+        {/* MOBILE SIDEBAR BACKDROP */}
+        {isMobile && isSidebarOpen && (
+            <div 
+                className="absolute inset-0 bg-black bg-opacity-50 z-20 backdrop-blur-sm"
+                onClick={() => setIsSidebarOpen(false)}
+            />
+        )}
 
-        <div className="relative flex-1 h-full">
-            {/* Toolbar Removed */}
-            
-            {/* Color Picker Positioned next to Toolbar area (now empty, move left) */}
+        {/* SIDEBAR CONTAINER - Responsive Transition */}
+        <div 
+            className={`
+                h-full bg-white shadow-2xl z-30 transition-all duration-300 ease-in-out
+                ${isMobile ? 'absolute left-0 top-0 bottom-0' : 'relative'}
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:hidden'}
+            `}
+            style={{ width: SIDEBAR_WIDTH }}
+        >
+            <LessonSidebar 
+                activeLessonId={activeLesson?.id || null} 
+                onSelectLesson={handleLessonSelect} 
+                currentTool={tool}
+                setTool={handleToolChange}
+            />
+        </div>
+
+        <div className="relative flex-1 h-full overflow-hidden bg-slate-50">
+            {/* Color Picker - Positioned absolutely within Canvas area */}
             <div className="absolute left-4 top-4 z-10">
                 <ColorPicker 
                     activeColor={activeColor} 
@@ -1622,25 +1680,25 @@ const App: React.FC = () => {
                     }`}
                 >
                     <span className="text-xl">🖱️</span>
-                    <span className="font-bold">Di chuyển</span>
+                    <span className="font-bold hidden md:inline">Di chuyển</span>
                 </button>
             </div>
 
             {/* UI Overlay */}
-            <div className="absolute bottom-4 left-4 pointer-events-none flex flex-col gap-2">
+            <div className="absolute bottom-4 left-4 pointer-events-none flex flex-col gap-2 max-w-[calc(100%-80px)] md:max-w-sm">
                 {activeLesson && (
-                    <div className="bg-blue-50 p-4 rounded shadow-lg border border-blue-200 max-w-sm pointer-events-auto">
-                        <h4 className="font-bold text-blue-800 mb-1">{activeLesson.title}</h4>
-                        <p className="text-blue-700 text-sm mb-2">{activeLesson.description}</p>
-                        <div className="text-xs text-blue-600 italic">
+                    <div className="bg-blue-50 p-3 md:p-4 rounded shadow-lg border border-blue-200 pointer-events-auto">
+                        <h4 className="font-bold text-blue-800 mb-1 text-sm md:text-base">{activeLesson.title}</h4>
+                        <p className="text-blue-700 text-xs md:text-sm mb-2">{activeLesson.description}</p>
+                        <div className="text-[10px] md:text-xs text-blue-600 italic">
                             {getInstructionText()}
                         </div>
                     </div>
                 )}
                 {/* Show simple instructions if no lesson active but tool selected */}
                 {!activeLesson && tool !== ToolType.SELECT && (
-                    <div className="bg-white p-3 rounded shadow border border-gray-200 max-w-xs pointer-events-auto">
-                        <div className="text-xs text-gray-600 font-medium">
+                    <div className="bg-white p-2 md:p-3 rounded shadow border border-gray-200 max-w-xs pointer-events-auto">
+                        <div className="text-[10px] md:text-xs text-gray-600 font-medium">
                             {getInstructionText()}
                         </div>
                     </div>
@@ -1648,7 +1706,7 @@ const App: React.FC = () => {
                 {tool === ToolType.SELECT && (
                     <div className="bg-white p-2 px-3 rounded shadow border border-gray-200 pointer-events-auto flex items-center gap-2">
                         <span className="text-lg">🖱️</span>
-                        <span className="text-xs text-gray-600 font-medium">Kéo thả các điểm, nhãn hoặc hình vẽ để di chuyển.</span>
+                        <span className="text-[10px] md:text-xs text-gray-600 font-medium">Kéo thả các điểm, nhãn hoặc hình vẽ để di chuyển.</span>
                     </div>
                 )}
             </div>
